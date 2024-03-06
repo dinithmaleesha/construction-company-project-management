@@ -1,0 +1,91 @@
+$selectPlanMainTask = "SELECT mt.task_id, mt.task_name, mt.task_description, pt.task_status
+                                        FROM main_task mt
+                                        JOIN plan_task pt ON mt.task_id = pt.task_id
+                                        WHERE pt.plan_id = $planId;";
+
+                $selectPlanMainTaskQuery = mysqli_query($conn, $selectPlanMainTask);
+                $taskCounter = 1;
+
+                if ($selectPlanMainTaskQuery) {
+                    if (mysqli_num_rows($selectPlanMainTaskQuery) > 0) {
+                        while ($taskData = mysqli_fetch_assoc($selectPlanMainTaskQuery)) {
+                        $taskId = $taskData['task_id'];
+                        $taskName = $taskData['task_name'];
+                        $taskDesc = $taskData['task_description'];
+                        $taskStatus = $taskData['task_status'];
+
+                        echo '<div class="mt-5">';
+                        echo '<div class="d-flex justify-content-between align-items-start">'; // Added a container for flex alignment
+                        echo '    <div>';
+                        echo '        <h5>' . $taskCounter . '. Main Task: ' . $taskName . '</h5>';
+                        echo '        <p>' . $taskDesc . '</p>';
+                        echo '    </div>';
+                        echo '    <div>';
+                        echo '  <button type="button" class="btn btn-success edit-main-task"
+                                    data-toggle="modal" data-target="#updateMainTaskModal"
+                                    data-task-id="' . $taskId . '"
+                                    data-task-name="' . htmlspecialchars($taskName) . '"
+                                    data-task-description="' . htmlspecialchars($taskDesc) . '">
+                                    <i class="fas fa-pen"></i> Edit Task Name
+                                </button>';
+
+                        echo '    </div>';
+                        echo '</div>';
+                        echo '<table class="table">';
+                        echo '<thead>';
+                        echo '<tr>';
+                        echo '<th style="width: 30%;">Sub Task Name</th>';
+                        echo '<th style="width: 40%;">Sub Task Description</th>';
+                        echo '<th style="width: 15%;">Sub Task Status</th>';
+                        echo '<th style="width: 15%;">Action</th>';
+                        echo '</tr>';
+                        echo '</thead>';
+                        echo '<tbody>';
+
+                        // Fetch and display subtasks for the current main task
+                        $selectSubtasksQuery = "SELECT st.subtask_id, st.subtask_name, st.sub_description, pst.sub_task_status
+                                                FROM sub_task st
+                                                JOIN plan_sub_task pst ON st.subtask_id = pst.subtask_id
+                                                WHERE pst.plan_id = $planId AND st.task_id = {$taskData['task_id']}";
+
+                        $selectSubtasksResult = mysqli_query($conn, $selectSubtasksQuery);
+
+                        while ($subtaskData = mysqli_fetch_assoc($selectSubtasksResult)) {
+                            echo '<tr>';
+                            echo '<td>' . $subtaskData['subtask_name'] . '</td>';
+                            echo '<td>' . $subtaskData['sub_description'] . '</td>';
+                            echo '<td>' . $subtaskData['sub_task_status'] . '</td>';
+                            echo '<td class="text-right"> 
+                                    <button type="button" class="btn btn-warning edit-sub-task" 
+                                        data-toggle="modal" data-target="#updateSubTaskModal"
+                                        data-subtask-id="' . htmlspecialchars($subtaskData['subtask_id']) . '"
+                                        data-subtask-name="' . htmlspecialchars($subtaskData['subtask_name']) . '"
+                                        data-subtask-description="' . htmlspecialchars($subtaskData['sub_description']) . '"
+                                        data-subtask-status="' . $subtaskData['sub_task_status'] . '"
+                                        onclick="setSubTaskId(' . $taskId . ')">
+                                        <i class="fas fa-pen"></i> Edit Subtask
+                                    </button> 
+                                </td>';
+
+                            echo '</tr>';
+                        }
+
+                        echo '</tbody>';
+                        echo '</table>';
+                        echo '<td class="text-right">';
+                        echo '<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addNewSubTask" onclick="prepareAddNewSubTaskModal(' . $taskId . ', ' . $planId . ')">';
+                        echo 'Add New Sub Task';
+                        echo '</button>';
+                        echo '</td>';
+
+                        echo '<hr>';
+                        echo '</div>';
+
+                        $taskCounter++;
+                    }
+                } else {
+                    echo '<div class="mt-3"><h4>No main tasks found for this plan.</h4></div>';
+                }
+            } else {
+                echo '<div class="mt-3"><h4>No plan found for this project.</h4></div>';
+            }

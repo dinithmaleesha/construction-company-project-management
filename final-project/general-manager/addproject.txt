@@ -1,0 +1,77 @@
+if (isset($_POST['addProject'])) {
+    $projectName = mysqli_real_escape_string($conn, $_POST['projectName']);
+    $projectDescription = mysqli_real_escape_string($conn, $_POST['projectDescription']);
+    $startDate = mysqli_real_escape_string($conn, $_POST['startDate']);
+    $endDate = mysqli_real_escape_string($conn, $_POST['endDate']);
+    // client
+    $fname = mysqli_real_escape_string($conn, $_POST['fname']);
+    $lname = mysqli_real_escape_string($conn, $_POST['lname']);
+    $username = mysqli_real_escape_string($conn, $_POST['username']);
+    $password = mysqli_real_escape_string($conn, $_POST['password']);
+    $confirmPassword = mysqli_real_escape_string($conn, $_POST['confirmPassword']);
+    $tp = mysqli_real_escape_string($conn, $_POST['tp']);
+    $company = mysqli_real_escape_string($conn, $_POST['company']);
+
+    $projectManagerId = mysqli_real_escape_string($conn, $_POST['projectManager']);
+    $clientType = "Client";
+    $clientStatus = "Active";
+    $projectStatus = "Ongoing";
+
+    // check client already exsits
+    $selectClientId = getUserIdByUsername($conn, $username);
+
+    if (!$selectClientId) {
+        $addUserResult = addUser($conn, $username, $password, $confirmPassword, $fname, $lname, $tp, $clientType, $company, $clientStatus);
+
+        if ($addUserResult) {
+            $userId = mysqli_insert_id($conn);
+            // Add the project
+            $addProjectResult = addProject($conn, $projectName, $projectDescription, $startDate, $endDate, $projectStatus, $userId,  $projectManagerId);
+
+            if ($addProjectResult) {
+                $successMessage = "Project added successfully!";
+                echo '<script>
+                    setTimeout(function() {
+                        window.location.href = "add-project.php?id=' . $user_id . '";
+                    }, 5000);
+                </script>';
+            } else {
+                $errorMessage = "Error adding project. Please try again.";
+                echo '<script>
+                    setTimeout(function() {
+                        window.location.href = "add-project.php?id=' . $user_id . '";
+                    }, 5000);
+                </script>';
+            }
+        } else {
+            $errorMessage = "Error adding user. Please try again.";
+            echo '<script>
+                    setTimeout(function() {
+                        window.location.href = "add-project.php?id=' . $user_id . '";
+                    }, 5000);
+                </script>';
+            exit();
+        }
+    } else {
+        // Add the project
+        $addProjectResult = addProject($conn, $projectName, $projectDescription, $startDate, $endDate, $projectStatus, $selectClientId,  $projectManagerId);
+
+        if ($addProjectResult) {
+            $successMessage = "Project added successfully!";
+            echo '<script>
+                setTimeout(function() {
+                    window.location.href = "add-project.php?id=' . $user_id . '";
+                }, 5000);
+            </script>';
+        } else {
+            $errorMessage = "Error adding project. Please try again.";
+            echo '<script>
+                setTimeout(function() {
+                    window.location.href = "add-project.php?id=' . $user_id . '";
+                }, 5000);
+            </script>';
+        }
+    }
+
+    
+}

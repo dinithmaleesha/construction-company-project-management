@@ -1,0 +1,282 @@
+<?php
+session_start();
+if (!isset($_SESSION['gm']) || $_SESSION['gm'] !== true) {
+    header("Location: ../php/access-denied.php");
+    exit();
+}
+if (isset($_GET['id']) && isset($_GET['project-id'])) {
+    $user_id = $_GET['id'];
+    $project_id = $_GET['project-id'];
+} else {
+    header("location: ../php/access-denied.php");
+    exit();
+}
+@include '../php/config.php';
+
+if (isset($_GET['id']) && isset($_GET['project-id'])) {
+    $user_id = $_GET['id'];
+    $project_id = $_GET['project-id'];
+
+    $query = "SELECT 
+                p.project_id, 
+                p.project_name, 
+                p.description, 
+                p.start_date, 
+                p.end_date, 
+                p.project_status, 
+                p.client_id, 
+                CONCAT(u_client.fname, ' ', u_client.lname) AS client_fullname,
+                CONCAT(u_pm.fname, ' ', u_pm.lname) AS pm_fullname,
+                p.pm_id, 
+                p.plan_id
+            FROM 
+                project p
+            JOIN 
+                user u_client ON p.client_id = u_client.user_id
+            JOIN 
+                user u_pm ON p.pm_id = u_pm.user_id
+            WHERE 
+                p.project_id = $project_id";
+
+    $result = mysqli_query($conn, $query);
+
+    if ($result && mysqli_num_rows($result) > 0) {
+        $projectDetails = mysqli_fetch_assoc($result);
+    } else {
+        header("location: home.php?id=<?php echo $user_id; ?>");
+        exit();
+    }
+
+    
+
+    $empQuery = "SELECT DISTINCT `job_title`
+                FROM `employee`
+                WHERE `emp_status` = 'Active' AND `emp_availability` = 'Yes'";
+    $empResult = mysqli_query($conn, $empQuery);
+
+    $employee = [];
+    while ($row = $empResult->fetch_assoc()) {
+        $employee[] = $row;
+    }
+
+} else {
+    header("location: home.php?id=<?php echo $user_id; ?>");
+    exit();
+}
+
+
+
+
+
+
+
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo $projectDetails['project_name']; ?></title>
+    <!-- Bootstrap CSS link -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+    <!-- Bootstrap JavaScript and jQuery files -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        .project-details {
+            display: grid;
+            grid-template-columns: 150px auto;
+            gap: 10px;
+        }
+
+        .project-details p {
+            margin: 0;
+        }
+
+        .project-details p:nth-child(odd) {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- header -->
+    <?php include "gm-header.php"; ?>
+
+    <div class="container mt-4">
+            <a href="#" class="btn btn-primary mr-1">
+                <i class="fas fa-plus"></i> Add Plan
+            </a>
+            <a href="allocate-material.php?id=<?php echo $user_id; ?>&project-id=<?php echo $project_id; ?>" id="addMaterialBtn" class="btn btn-primary mr-1">
+                <i class="fas fa-plus"></i> Add Material
+            </a>
+            <a href="#" id="addEmpBtn" class="btn btn-primary mr-1">
+                <i class="fas fa-plus"></i> Add Employee
+            </a>
+            <a href="#" class="btn btn-warning mr-1">
+                <i class="fas fa-pen"></i> Update Plan
+            </a>
+            <a href="#" class="btn btn-warning mr-1">
+                <i class="fas fa-pen"></i> Update Material
+            </a>
+            <a href="#" class="btn btn-warning mr-1">
+                <i class="fas fa-pen"></i> Update Employee
+            </a>
+            <a href="all-project.php?id=<?php echo $user_id; ?>" class="btn btn-warning mr-1">
+                <i class="fas fa-pen"></i> Update Project
+            </a>
+
+        </div>
+    <div class="container mt-3">
+        <!-- <div class="float-right">
+            <a href="#" class="btn btn-primary mr-3">
+                <i class="fas fa-plus"></i> Add Plan
+            </a>
+            <a href="#" id="addMaterialBtn" class="btn btn-primary mr-3">
+                <i class="fas fa-plus"></i> Add Material
+            </a>
+            <a href="#" id="addEmpBtn" class="btn btn-primary mr-3">
+                <i class="fas fa-plus"></i> Add Employee
+            </a>
+            <a href="all-project.php?id=<?php echo $user_id; ?>" class="btn btn-warning mr-3">
+                <i class="fas fa-pen"></i> Update Project
+            </a>
+
+        </div> -->
+        
+        <!-- Display project details -->
+        <h2><?php echo $projectDetails['project_name']; ?></h2>
+        <div class="project-details">
+            <p>Description:</p>
+            <p><?php echo $projectDetails['description']; ?></p>
+
+            <p>Start Date:</p>
+            <p><?php echo $projectDetails['start_date']; ?></p>
+
+            <p>End Date:</p>
+            <p><?php echo $projectDetails['end_date']; ?></p>
+
+            <p>Client Name:</p>
+            <p><?php echo $projectDetails['client_fullname']; ?></p>
+
+            <p>Project Manager:</p>
+            <p><?php echo $projectDetails['pm_fullname']; ?></p>
+
+            <p>Status:</p>
+            <p><?php echo $projectDetails['project_status']; ?></p>
+        </div>
+        
+    </div>
+
+    <script>
+    $(document).ready(function () {
+        $('#addMaterialBtn').click(function () {
+            $('#addMaterialModal').modal('show');
+        });
+        $('#addEmpBtn').click(function () {
+            $('#addEmpModal').modal('show');
+        });
+    });
+    </script>
+
+
+
+    <!-- Add Material Modal -->
+    <div class="modal fade" id="addMaterialModal" tabindex="-1" role="dialog" aria-labelledby="addMaterialModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addMaterialModalLabel">Add Material</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="materialForm" action="" method="post">
+                        <div class="form-group">
+                            <label for="materialDropdown">Material Name:</label>
+                            <select class="form-control" id="materialDropdown" name="materialDropdown">
+                                <option value="">- Select Material -</option>
+                                <?php
+                                foreach ($material as $mat) {
+                                    echo '<option value="' . $mat['mat_id'] . '">' . $mat['mat_name'] . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="materialQuantity">Quantity:</label>
+                            <input type="number" class="form-control" id="materialQuantity" name="materialQuantity" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="materialNote">Note:</label>
+                            <input type="text" class="form-control" id="materialNote" name="materialNote" required>
+                        </div>
+
+                        <!-- <button type="button" class="btn btn-primary" onclick="addMaterial()">Add</button> -->
+                        <button type="submit" class="btn btn-success" name="addMat">Add</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Add Employee Modal -->
+    <div class="modal fade" id="addEmpModal" tabindex="-1" role="dialog" aria-labelledby="addEmpModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addEmpModalLabel">Add Employee</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="empForm" action="" method="post">
+                        <div class="form-group">
+                            <label for="empDropdown">Employee Type:</label>
+                            <select class="form-control" id="empDropdown" name="empDropdown">
+                                <option value="">- Select Type -</option>
+                                <?php
+                                foreach ($employee as $emp) {
+                                    echo '<option value="' . $emp['job_title'] . '">' . $emp['job_title'] . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="materialQuantity">Quantity:</label>
+                            <input type="number" class="form-control" id="materialQuantity" name="materialQuantity" min="1" required>
+                        </div>
+
+                        <!-- <button type="button" class="btn btn-primary" onclick="addMaterial()">Add</button> -->
+                        <button type="submit" class="btn btn-success" name="addMat">Add</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
+
+
+
+
+
+
+
+$start_date = date("Y-m-d"); 
+                $end_date = NULL;
+
+                $insertEmpAllocation = "INSERT INTO `employee_allocation`(`project_id`, `employee_id`, `emp_allocation_start_date`, `emp_allocation_end_date`)
+                VALUES ('$project_id','[value-2]','$start_date','$end_date')";
